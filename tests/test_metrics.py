@@ -78,6 +78,15 @@ class EvidenceTests(unittest.TestCase):
         self.assertFalse(tuning.owned_tbf_classes([{'class': 'htb', 'handle': '1:1', 'parent': '1:'}]))
         self.assertFalse(tuning.owned_tbf_classes([{'class': 'tbf', 'handle': '2:1', 'parent': '2:'}]))
 
+    def test_owned_sysctl_boot_default_fq_is_distinct_from_custom_fq(self):
+        rows = [{'root': True, 'kind': 'fq', 'handle': '0:', 'options': {'limit': 10000, 'flow_limit': 100}}]
+        self.assertTrue(tuning.automatic_boot_fq(rows))
+        rows[0]['handle'] = '1:'
+        self.assertFalse(tuning.automatic_boot_fq(rows))
+        rows[0]['handle'] = '0:'
+        rows[0]['options']['limit'] = 5000
+        self.assertFalse(tuning.automatic_boot_fq(rows))
+
     def test_simple_factory_queue_parameters_are_recognized(self):
         self.assertTrue(tuning.factory_queue([{'root': True, 'kind': 'pfifo_fast', 'handle': '0:',
                                              'options': {'bands': 3, 'priomap': tuning.DEFAULT_PRIOMAP}}]))

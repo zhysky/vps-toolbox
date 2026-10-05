@@ -150,6 +150,15 @@ def owned_tbf_classes(rows):
             and rows[0].get('handle') == '1:1' and rows[0].get('parent') == '1:')
 
 
+def automatic_boot_fq(rows):
+    # systemd-sysctl installs our default_qdisc=fq before the NIC appears.
+    # The kernel-created root then has handle 0: and the stock FQ limits;
+    # it is neither the pre-install CoDel root nor our explicit handle 1:.
+    return (len(rows) == 1 and rows[0].get('root') and rows[0].get('kind') == 'fq'
+            and rows[0].get('handle') == '0:' and rows[0].get('options', {}).get('limit') == 10000
+            and rows[0].get('options', {}).get('flow_limit') == 100)
+
+
 def verify_current(state):
     current = facts(resolve_interface(state['before']['mac']))
     for key, value in state['desired']['sysctls'].items():
@@ -348,11 +357,16 @@ def main():
             device = resolve_interface(state['before']['mac'])
             current = facts(device)
             owned = current['qdisc'] == state.get('applied_qdisc')
-            if not (factory_queue(current['qdisc']) or owned):
+            if not (factory_queue(current['qdisc']) or automatic_boot_fq(current['qdisc']) or owned):
                 raise RuntimeError('Boot queue has an unexpected topology; leaving it unchanged')
             if current['filters']:
                 raise RuntimeError('Boot queue has filters; leaving it unchanged')
+            if current['classes'] and not (owned and owned_tbf_classes(current['classes'])):
+                raise RuntimeError('Boot queue has unexpected classes; leaving it unchanged')
+            if any(current['sysctls'][key].split() != value.split() for key, value in state['desired']['sysctls'].items()):
+                raise RuntimeError('Boot sysctls differ from committed values; inspect conflicting configuration')
             state['applied_qdisc'] = apply_queue(state)
+            verify_current(state)
             state['persisted_at_boot_utc'] = now()
             save(state)
             result = {'queue_applied': True, 'actual_qdisc': state['applied_qdisc']}
