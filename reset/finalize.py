@@ -75,7 +75,8 @@ grub.parent.mkdir(exist_ok=True)
 consoles = ' '.join(plan['console_arguments'])
 if not re.fullmatch(r'[A-Za-z0-9_=, ./:-]*', consoles):
     raise RuntimeError('Unexpected console argument characters')
-grub.write_text('# Managed by vps-toolbox reset\nGRUB_FORCE_PARTUUID=""\nGRUB_CMDLINE_LINUX_DEFAULT="' + consoles + '"\n')
+grub.write_text('# Managed by vps-toolbox reset\nGRUB_FORCE_PARTUUID=""\nGRUB_DISABLE_LINUX_UUID=false\n'
+                'GRUB_DISABLE_LINUX_PARTUUID=true\nGRUB_CMDLINE_LINUX_DEFAULT="' + consoles + '"\n')
 run(['update-grub'])
 kernels = sorted(Path('/boot').glob('vmlinuz-*'))
 if not kernels:
@@ -114,5 +115,7 @@ receipt = {'phase': 'target-validated-before-first-boot', 'recorded_utc': dateti
 (log / 'reset-receipt.json').write_text(json.dumps(receipt, indent=2) + '\n')
 os.chmod(log / 'reset-receipt.json', 0o600)
 # This exact directory was created by finalize.sh for this invocation.
+if (BASE / '.owner').read_text().strip() != 'vps-reset-finalize:v1':
+    raise RuntimeError('Finalize directory ownership mismatch')
 shutil.rmtree(BASE)
 print('Target SSH, network, kernel, initrd, GRUB and package checks passed; external first-boot verification remains pending.')
