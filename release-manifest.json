@@ -1,5 +1,5 @@
 {
-  "source_commit": "643e27bc0a92771ef77cd50a29b0e36f7abaf578",
+  "source_commit": "7baa8cb4b5583f7b1603188188510ba2d6acab9b",
   "reset_helper_sha256": {
     "prepare.py": "516fffaced54a9822d5bd67680e3251dbd681532546df7c44715a4787bf48f85",
     "patch_sources.py": "2fb7927594113eed54a8799c299ea515a11620dc17cc60871315af74e28414be",
@@ -10,5 +10,6 @@
     "finalize.py": "9d5f989ee72cc197174f4e23747738884fd237c9aaeb8a08022eb8d42c13b895",
     "bootguard.c": "0f2c25f38dbb17d5f707e03914089257ca0deaf8446d80376536790c17bc0416"
   },
-  "vps_check_sha256": "bb7747df858de739c48e27eca47e315e888fd41fde05aa9ec5bab17e313380ef"
+  "vps_check_sha256": "bb7747df858de739c48e27eca47e315e888fd41fde05aa9ec5bab17e313380ef",
+  "optimizer_sha256": "640f099a91a2e872a590d07e21811f7bfd5c781b057e896505a84eb9f69c0ac4"
 }
