@@ -615,6 +615,17 @@ def peer_server(args):
         log = (output / 'iperf-server.jsonl').open('xb')
         process = subprocess.Popen([args.iperf, '-s', '-' + str(bind.version), '-B', str(bind), '-p', str(args.port),
                                     '-J', '--forceflush', '--rcv-timeout', '120000'], stdout=log, stderr=subprocess.STDOUT)
+
+        def telemetry():
+            with (output / 'tcp-telemetry.jsonl').open('x', encoding='utf-8') as stream:
+                while not stop.is_set():
+                    sample = command(['ss', '-tinmp', 'sport', '=', ':' + str(args.port)], 5)
+                    stream.write(json.dumps({'recorded_utc': utc(), 'sockets': sample.get('stdout', ''),
+                                             'memory': read_text('/proc/meminfo'),
+                                             'memory_pressure': read_text('/proc/pressure/memory')}) + '\n')
+                    stream.flush()
+                    stop.wait(2)
+        threading.Thread(target=telemetry, daemon=True).start()
         time.sleep(.4)
         if process.poll() is not None:
             raise RuntimeError('iperf server exited; inspect its log')
