@@ -22,7 +22,7 @@ cleanup() { case "$temporary" in /var/tmp/vps-reset-helper.*) rm -rf --one-file-
 trap cleanup EXIT
 trap 'exit 130' INT
 trap 'exit 143' TERM
-base='https://raw.githubusercontent.com/zhysky/vps-toolbox/111709938c5a0e7b758656f816809161749816b7/reset'
+base='https://raw.githubusercontent.com/zhysky/vps-toolbox/e862ff0c47ac24b93b12ec10da71221c79aaf957/reset'
 while read -r digest name; do
     curl -fsSL --proto '=https' --tlsv1.2 --connect-timeout 15 --max-time 60 "$base/$name" -o "$temporary/$name"
     printf '%s  %s\n' "$digest" "$temporary/$name" | sha256sum --check --strict >/dev/null
@@ -32,8 +32,8 @@ done <<'HASHES'
 10b57ef8728b790e5cbe2136ea77e3941996efae0a22005dadb8c45049279b01 inject_initrd.py
 492a7d1ca3cc0aa420569827a34e17a95121c23437fe248849cbeda46d87ce10 preflight.sh
 09f411d74ad9abee43ef7b2f01d144a0bd866eaa94ae3761df4141d21c14004b gate.sh
-3612678372f9f6bdb32f68adb64eca1bda5d01b7b5f0e2d9a571b2c697cd0079 finalize.sh
-cd59f6a1503c407301305ebe8608e69bc4c2e29f6b9709ede3fa10e6a4938e2f finalize.py
+55bb54d4ffae74316e60d8adf6e52ccf6b2867c8f5b3e99c8e43c8fcd16f7c51 finalize.sh
+9d5f989ee72cc197174f4e23747738884fd237c9aaeb8a08022eb8d42c13b895 finalize.py
 0f2c25f38dbb17d5f707e03914089257ca0deaf8446d80376536790c17bc0416 bootguard.c
 HASHES
 python3 "$temporary/prepare.py" "$@"
