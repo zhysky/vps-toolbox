@@ -73,6 +73,11 @@ class EvidenceTests(unittest.TestCase):
         self.assertFalse(tuning.factory_queue([{'root': True, 'kind': 'pfifo_fast', 'options': {'bands': 4}}]))
         self.assertFalse(tuning.factory_queue([{'root': True, 'kind': 'pfifo_fast'}, {'kind': 'clsact'}]))
 
+    def test_tbf_json_class_field_matches_live_iproute2_output(self):
+        self.assertTrue(tuning.owned_tbf_classes([{'class': 'tbf', 'handle': '1:1', 'parent': '1:', 'leaf': '0x10'}]))
+        self.assertFalse(tuning.owned_tbf_classes([{'class': 'htb', 'handle': '1:1', 'parent': '1:'}]))
+        self.assertFalse(tuning.owned_tbf_classes([{'class': 'tbf', 'handle': '2:1', 'parent': '2:'}]))
+
     def test_simple_factory_queue_parameters_are_recognized(self):
         self.assertTrue(tuning.factory_queue([{'root': True, 'kind': 'pfifo_fast', 'handle': '0:',
                                              'options': {'bands': 3, 'priomap': tuning.DEFAULT_PRIOMAP}}]))

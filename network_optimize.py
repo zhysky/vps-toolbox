@@ -144,6 +144,12 @@ def stop_timer(state):
     return run(['systemctl', 'is-active', timer], check=False) != 'active'
 
 
+def owned_tbf_classes(rows):
+    # `tc -j class` uses "class" on current iproute2, unlike qdisc's "kind".
+    return (len(rows) == 1 and rows[0].get('kind', rows[0].get('class')) == 'tbf'
+            and rows[0].get('handle') == '1:1' and rows[0].get('parent') == '1:')
+
+
 def verify_current(state):
     current = facts(resolve_interface(state['before']['mac']))
     for key, value in state['desired']['sysctls'].items():
@@ -153,7 +159,7 @@ def verify_current(state):
         raise RuntimeError('Queue topology/options changed after application; refusing to commit')
     if current['filters'] or current['classes']:
         # TBF exposes one internal class; inspect it separately instead of treating it as a foreign classifier.
-        if current['filters'] or not state['desired']['rate_mbps'] or any(v.get('kind') != 'tbf' for v in current['classes']):
+        if current['filters'] or not state['desired']['rate_mbps'] or not owned_tbf_classes(current['classes']):
             raise RuntimeError('Unexpected class/filter state')
     return current
 
