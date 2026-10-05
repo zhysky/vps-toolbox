@@ -110,6 +110,7 @@ class Report:
         self.path = base / (datetime.datetime.now(datetime.timezone.utc).strftime('%Y%m%dT%H%M%SZ') + '-' + uuid.uuid4().hex[:6])
         self.path.mkdir(mode=0o700)
         self.data = {'schema_version': 1, 'tool_version': VERSION, 'mode': mode, 'started_utc': utc(),
+                     'tool_sha256': hashlib.sha256(Path(__file__).read_bytes()).hexdigest(),
                      'options': options, 'checks': [], 'complete': False, 'report_directory': str(self.path)}
         self.save()
 
@@ -632,7 +633,10 @@ def peer_server(args):
         state.update(ready=True, iperf_pid=process.pid)
         atomic_json(state_path, state)
         print(json.dumps(state), flush=True)
-        stop.wait(args.ttl)
+        deadline = time.monotonic() + args.ttl
+        while time.monotonic() < deadline and not stop.wait(.5):
+            if process.poll() is not None:
+                raise RuntimeError('The iperf server exited before its deadline')
     finally:
         stop.set()
         if process and process.poll() is None:
@@ -816,6 +820,12 @@ def peer_plan(profile):
     return jobs
 
 
+def iperf_error_status(message):
+    unsupported = ('socket buffer size not set correctly', 'unrecognized option', 'unknown option',
+                   'not supported on this platform', 'unable to set tcp mss', 'unable to set tcp maximum segment size')
+    return 'skip' if any(value in message.lower() for value in unsupported) else 'fail'
+
+
 def exact(stream, size):
     chunks = bytearray()
     while len(chunks) < size:
@@ -933,11 +943,17 @@ def peer_client(args):
                 sources = result['metrics']['server_observed_sources']
                 result['source_verified'] = bool(sources) and all(normalize_ip(v) == observed for v in sources)
                 if data.get('error'):
-                    result.update(status='fail', reason=data['error'])
+                    result.update(status=iperf_error_status(data['error']), reason=data['error'])
                 elif result['metrics']['received_Mbps'] is None:
                     result.update(status='error', reason='no authoritative receiver measurement')
                 elif not result['source_verified']:
                     result.update(status='partial', reason='server-side source proof unavailable or mismatched')
+                elif job['udp'] and result['metrics']['udp_loss_percent'] is not None and result['metrics']['udp_loss_percent'] > 0:
+                    result.update(status='fail' if result['metrics']['udp_loss_percent'] >= 100 else 'partial',
+                                  reason='receiver reported UDP packet loss; compare offered rate with measured capacity')
+            elif result.get('returncode'):
+                error = result.get('stderr', '')
+                result.update(status=iperf_error_status(error), reason=error[:1000])
             report.add(job['name'], result)
         report.finish()
     except BaseException:

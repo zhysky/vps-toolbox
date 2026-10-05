@@ -45,6 +45,10 @@ class EvidenceTests(unittest.TestCase):
         self.assertIsNone(result['received_Mbps'])
         self.assertIsNone(result['retransmits'])
 
+    def test_unsupported_buffer_is_distinct_from_path_failure(self):
+        self.assertEqual(checks.iperf_error_status('socket buffer size not set correctly'), 'skip')
+        self.assertEqual(checks.iperf_error_status('unable to connect to server: Connection timed out'), 'fail')
+
     def test_receiver_source_is_retained(self):
         data = {'end': {'sum_received': {'bits_per_second': 2000000, 'bytes': 500000, 'seconds': 2}},
                 'server_output_json': {'start': {'connected': [{'remote_host': '192.0.2.1'}]}}}
