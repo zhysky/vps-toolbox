@@ -34,6 +34,6 @@ trap cleanup EXIT
 trap 'exit 130' INT
 trap 'exit 143' TERM
 curl -fsSL --proto '=https' --tlsv1.2 --connect-timeout 15 --max-time 60 \
-    'https://raw.githubusercontent.com/zhysky/vps-toolbox/b1c12ac80efc537077d9c638362f67f5d50f5d54/network_optimize.py' -o "$temporary/network_optimize.py"
-printf '640f099a91a2e872a590d07e21811f7bfd5c781b057e896505a84eb9f69c0ac4  %s\n' "$temporary/network_optimize.py" | sha256sum --check --strict >/dev/null
+    'https://raw.githubusercontent.com/zhysky/vps-toolbox/63b2136a478240b4528fa29ff1122db41a0656e4/network_optimize.py' -o "$temporary/network_optimize.py"
+printf '62347c9d5f2767ec18c9528eccd17319f01f8ac748ef945d921a89f00e5199c8  %s\n' "$temporary/network_optimize.py" | sha256sum --check --strict >/dev/null
 python3 "$temporary/network_optimize.py" "$@"
