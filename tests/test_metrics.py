@@ -45,6 +45,17 @@ class EvidenceTests(unittest.TestCase):
         self.assertIsNone(result['received_Mbps'])
         self.assertIsNone(result['retransmits'])
 
+    def test_bidirectional_download_uses_client_receiver(self):
+        data = {'end': {'sum_received_bidir_reverse': {'bits_per_second': 31000000, 'bytes': 38750000}},
+                'server_output_json': {'end': {
+                    'sum_received': {'bits_per_second': 28000000},
+                    'sum_received_bidir_reverse': {'bits_per_second': 0, 'bytes': 0},
+                    'sum_sent_bidir_reverse': {'bits_per_second': 32000000, 'retransmits': 15}}}}
+        result = checks.summarize_iperf(data)
+        self.assertEqual(result['bidirectional']['upload_received_Mbps'], 28)
+        self.assertEqual(result['bidirectional']['download_received_Mbps'], 31)
+        self.assertEqual(result['bidirectional']['download_retransmits'], 15)
+
     def test_unsupported_buffer_is_distinct_from_path_failure(self):
         self.assertEqual(checks.iperf_error_status('socket buffer size not set correctly'), 'skip')
         self.assertEqual(checks.iperf_error_status('unable to connect to server: Connection timed out'), 'fail')

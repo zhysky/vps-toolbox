@@ -788,6 +788,19 @@ def summarize_iperf(data, reverse=False, udp=False):
               'udp_jitter_ms': receiver.get('jitter_ms') if receiver and udp else None}
     peers = server.get('start', {}).get('connected', [])
     result['server_observed_sources'] = sorted({x['remote_host'] for x in peers if x.get('remote_host')})
+    result['server_tcp_congestion'] = server_end.get('sender_tcp_congestion')
+    if 'sum_received_bidir_reverse' in client_end:
+        # In bidirectional output, the server's reverse receiver is a zero
+        # placeholder. The actual download receiver is on the client.
+        download = client_end.get('sum_received_bidir_reverse', {})
+        reverse_sender = server_end.get('sum_sent_bidir_reverse', {})
+        result['measurement_direction'] = 'client_to_server'
+        result['bidirectional'] = {
+            'upload_received_Mbps': result['received_Mbps'],
+            'download_received_Mbps': download['bits_per_second'] / 1e6 if 'bits_per_second' in download else None,
+            'download_receiver_bytes': download.get('bytes'),
+            'download_receiver_seconds': download.get('seconds'),
+            'download_retransmits': reverse_sender.get('retransmits')}
     return result
 
 
@@ -795,6 +808,12 @@ def peer_plan(profile):
     jobs = []
     def add(name, flags, reverse=False, udp=False):
         jobs.append({'name': name, 'flags': flags, 'reverse': reverse, 'udp': udp})
+    if profile == 'compare':
+        for repeat in range(1, 4):
+            add('tcp_p1_download_r%d' % repeat, ['-P', '1'], True)
+            add('tcp_p4_download_r%d' % repeat, ['-P', '4'], True)
+            add('tcp_p1_upload_r%d' % repeat, ['-P', '1'])
+        return jobs
     for parallel in ([1] if profile == 'quick' else [1, 2, 4, 8]):
         for reverse in (False, True):
             add('tcp_p%d_%s' % (parallel, 'download' if reverse else 'upload'), ['-P', str(parallel)], reverse)
@@ -946,6 +965,8 @@ def peer_client(args):
                     result.update(status=iperf_error_status(data['error']), reason=data['error'])
                 elif result['metrics']['received_Mbps'] is None:
                     result.update(status='error', reason='no authoritative receiver measurement')
+                elif '--bidir' in job['flags'] and result['metrics'].get('bidirectional', {}).get('download_received_Mbps') is None:
+                    result.update(status='partial', reason='bidirectional download receiver measurement is unavailable')
                 elif not result['source_verified']:
                     result.update(status='partial', reason='server-side source proof unavailable or mismatched')
                 elif job['udp'] and result['metrics']['udp_loss_percent'] is not None and result['metrics']['udp_loss_percent'] > 0:
@@ -1003,7 +1024,8 @@ def main():
     client.add_argument('--port', type=integer_range(1, 65535), default=45201)
     client.add_argument('--http-port', type=integer_range(1, 65535), default=45203)
     client.add_argument('--echo-port', type=integer_range(1, 65535), default=45202)
-    client.add_argument('--profile', choices=['quick', 'standard', 'full'], default='standard')
+    client.add_argument('--profile', choices=['quick', 'standard', 'full', 'compare'], default='standard',
+                        help='compare repeats P1/P4 download and P1 upload three times for tuning comparisons')
     client.add_argument('--seconds', type=integer_range(1, 60), default=10)
     client.add_argument('--iperf', default='iperf3')
     client.add_argument('--output', default='./vps-quality-results')
