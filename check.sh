@@ -50,8 +50,8 @@ fi
 apt-get -o DPkg::Lock::Timeout=120 install -y --no-install-recommends --no-upgrade \
     ca-certificates curl python3 iproute2 iputils-ping mtr-tiny sysbench iperf3 procps nftables
 curl -fsSL --proto '=https' --tlsv1.2 --connect-timeout 15 --max-time 60 \
-    'https://raw.githubusercontent.com/zhysky/vps-toolbox/7baa8cb4b5583f7b1603188188510ba2d6acab9b/vps_check.py' -o "$temporary/vps_check.py"
-printf 'bb7747df858de739c48e27eca47e315e888fd41fde05aa9ec5bab17e313380ef  %s\n' "$temporary/vps_check.py" | sha256sum --check --strict >/dev/null
+    'https://raw.githubusercontent.com/zhysky/vps-toolbox/bcd5fe92644a4f8ef92628f8440970536db7d8a2/vps_check.py' -o "$temporary/vps_check.py"
+printf '892b86271a10e574afcff7c222b1978762dfdae744a05e46936c13c2d820a37c  %s\n' "$temporary/vps_check.py" | sha256sum --check --strict >/dev/null
 python3 "$temporary/vps_check.py" --version
 install -d -m 0755 "$PREFIX"
 install -m 0644 "$temporary/vps_check.py" "$PREFIX/vps_check.py.new"

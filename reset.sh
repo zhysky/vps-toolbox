@@ -22,7 +22,7 @@ cleanup() { case "$temporary" in /var/tmp/vps-reset-helper.*) rm -rf --one-file-
 trap cleanup EXIT
 trap 'exit 130' INT
 trap 'exit 143' TERM
-base='https://raw.githubusercontent.com/zhysky/vps-toolbox/7baa8cb4b5583f7b1603188188510ba2d6acab9b/reset'
+base='https://raw.githubusercontent.com/zhysky/vps-toolbox/bcd5fe92644a4f8ef92628f8440970536db7d8a2/reset'
 while read -r digest name; do
     curl -fsSL --proto '=https' --tlsv1.2 --connect-timeout 15 --max-time 60 "$base/$name" -o "$temporary/$name"
     printf '%s  %s\n' "$digest" "$temporary/$name" | sha256sum --check --strict >/dev/null
